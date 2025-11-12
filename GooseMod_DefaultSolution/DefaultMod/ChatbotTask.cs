@@ -160,7 +160,17 @@ namespace DefaultMod
             // Phase 3: Release and leave (after 4.5 seconds)
             else
             {
-                data.isDragging = false;
+                if (data.isDragging)
+                {
+                    data.isDragging = false;
+                    
+                    // Activate the window so user can interact with it
+                    if (chatWindow != null && !chatWindow.IsDisposed && chatWindow.Visible)
+                    {
+                        chatWindow.Activate();
+                    }
+                }
+                
                 // Goose lets go and returns to normal behavior
                 API.Goose.setTaskRoaming(goose);
             }

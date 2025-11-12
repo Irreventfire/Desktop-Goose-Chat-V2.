@@ -5,19 +5,43 @@ Improved Version of the Desktop Goose mod chat expansion
 
 Improved Version of the Desktop Goose mod chat expansion
 
-## Compilation Instructions
+## Quick Compilation (Easy Method)
+
+We provide automated build scripts for easy compilation:
+
+### Windows
+```cmd
+build.bat
+```
+
+### Linux/Mac
+```bash
+./build.sh
+```
+
+The scripts will automatically:
+- Clean previous builds
+- Compile the mod in Release mode
+- Show the output DLL location
+- Display installation instructions
+
+## Manual Compilation Instructions
 
 ### Prerequisites
 
 Before compiling this mod, ensure you have the following installed:
 
-1. **Visual Studio 2019 or later** (Community Edition or higher)
+1. **Windows:** Visual Studio 2019 or later (Community Edition or higher) or MSBuild
    - Download from: https://visualstudio.microsoft.com/downloads/
    
-2. **Required Workloads:**
+2. **Linux/Mac:** Mono (with msbuild or xbuild)
+   - Ubuntu/Debian: `sudo apt-get install mono-complete`
+   - macOS: `brew install mono`
+   
+3. **Required Workloads (Windows):**
    - .NET desktop development
    
-3. **Desktop Goose** installed on your system
+4. **Desktop Goose** installed on your system
    - Download from: https://samperson.itch.io/desktop-goose
 
 ### Step-by-Step Compilation Guide
@@ -29,35 +53,39 @@ git clone https://github.com/Irreventfire/Desktop-Goose-Chat-V2.git
 cd Desktop-Goose-Chat-V2
 ```
 
-#### 2. Open the Project in Visual Studio
+#### 2. Build Using Scripts (Recommended)
+
+Use the provided build scripts (see Quick Compilation section above).
+
+#### 3. Or Open the Project in Visual Studio (Manual Method)
 
 - Launch Visual Studio
 - Click **File** → **Open** → **Project/Solution**
-- Navigate to the cloned repository folder
-- Select the `.sln` (solution) or `.csproj` (project) file and click **Open**
+- Navigate to the cloned repository folder: `GooseMod_DefaultSolution`
+- Select `GooseMod.sln` and click **Open**
 
-#### 3. Restore NuGet Packages
+#### 4. Restore NuGet Packages
 
 - Visual Studio should automatically restore any required NuGet packages
 - If not, right-click on the solution in **Solution Explorer** and select **Restore NuGet Packages**
 
-#### 4. Add Desktop Goose References
+#### 5. Add Desktop Goose References (if needed)
 
-You'll need to reference the Desktop Goose assemblies:
+The project should already have references configured, but if you see build errors about missing references:
 
 - Right-click on **References** or **Dependencies** in the Solution Explorer
 - Select **Add Reference**
-- Click **Browse** and navigate to your Desktop Goose installation folder (typically `C:\Program Files\Desktop Goose\`)
-- Add references to the required DLLs (e.g., `DesktopGoose.exe` or any mod API DLLs)
+- Click **Browse** and navigate to your Desktop Goose installation folder
+- Add references to the required DLLs if missing
 
-#### 5. Configure Build Settings
+#### 6. Configure Build Settings
 
 - In the toolbar, select your build configuration:
   - **Debug** - for development and testing
   - **Release** - for final distribution
 - Select the platform (typically **Any CPU** or **x64**)
 
-#### 6. Build the Project
+#### 7. Build the Project
 
 **Option A: Build via Menu**
 - Click **Build** → **Build Solution** (or press `Ctrl+Shift+B`)
@@ -66,11 +94,17 @@ You'll need to reference the Desktop Goose assemblies:
 - Right-click on the project name in Solution Explorer
 - Select **Build**
 
-#### 7. Locate the Compiled Files
+**Option C: Build via Command Line**
+```cmd
+cd GooseMod_DefaultSolution
+msbuild GooseMod.sln /p:Configuration=Release
+```
+
+#### 8. Locate the Compiled Files
 
 After a successful build, the compiled DLL will be in:
-- **Debug builds:** `bin\Debug\`
-- **Release builds:** `bin\Release\`
+- **Debug builds:** `GooseMod_DefaultSolution\DefaultMod\bin\Debug\DefaultMod.dll`
+- **Release builds:** `GooseMod_DefaultSolution\DefaultMod\bin\Release\DefaultMod.dll`
 
 ### Installation
 

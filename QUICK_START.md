@@ -3,12 +3,25 @@
 ## Installation Steps
 
 1. **Build the Mod**
+   
+   **Easy Way (Recommended):**
+   ```bash
+   # Windows
+   build.bat
+   
+   # Linux/Mac
+   ./build.sh
+   ```
+   
+   **Manual Way:**
    ```bash
    cd GooseMod_DefaultSolution
    # Windows with Visual Studio:
    msbuild GooseMod.sln /p:Configuration=Release
    
    # Linux/Mac with Mono:
+   msbuild GooseMod.sln /p:Configuration=Release
+   # or for older Mono versions:
    xbuild GooseMod.sln /p:Configuration=Release
    ```
 
