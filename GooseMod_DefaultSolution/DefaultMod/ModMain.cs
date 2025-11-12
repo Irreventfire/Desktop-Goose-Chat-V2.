@@ -19,6 +19,10 @@ namespace DefaultMod
         {
             // Subscribe to whatever events we want
             InjectionPoints.PostTickEvent += PostTick;
+            
+            // The ChatbotTask is automatically registered with the goose
+            // because it inherits from GooseTaskInfo.
+            // The goose will randomly choose to open the chatbot window!
         }
 
         public void PostTick(GooseEntity g)
@@ -31,6 +35,9 @@ namespace DefaultMod
                 // Lock our goose facing one direction for some reason?
                 g.direction = 0;
             }
+            
+            // You could also manually trigger the chatbot task here if needed:
+            // API.Goose.setCurrentTaskByID(g, "ChatbotTask");
         }
     }
 }
