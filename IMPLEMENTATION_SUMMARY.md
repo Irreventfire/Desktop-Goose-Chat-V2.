@@ -32,6 +32,10 @@ Successfully implemented a chatbot mod for Desktop Goose that allows users to in
   - Auto-scrolling to latest messages
   - Persistent across goose activities (hides instead of closing)
   - Method to swap response providers: `SetResponseProvider()`
+  - **Automatic focus management** - input field receives focus when window opens or is activated
+  - **Proper TabIndex** for keyboard navigation
+  - **Continuous focus** - input stays focused after sending messages
+  - **Window handle exposure** via `GetWindowHandle()` for goose interaction
 
 ### 4. Goose Task Integration (`ChatbotTask.cs`)
 - **Purpose:** Integrates the chat window with Desktop Goose's task system
@@ -39,6 +43,12 @@ Successfully implemented a chatbot mod for Desktop Goose that allows users to in
   - Automatically registered with goose (inherits `GooseTaskInfo`)
   - Can be randomly selected by the goose
   - Opens chat window near goose position
+  - **Multi-phase window dragging behavior:**
+    - Phase 0: Goose approaches the window
+    - Phase 1: Goose "grabs" the window (extends neck)
+    - Phase 2: Goose drags window across screen with smooth motion
+    - Phase 3: Goose releases and returns to normal behavior
+  - **Windows API integration** using `SetWindowPos` for window manipulation
   - Keeps window visible and accessible
   - Static window reference for persistence
   - Helper methods: `IsChatWindowOpen()`, `CloseChatWindow()`
@@ -203,6 +213,34 @@ if (aiAvailable)
 ✅ **Functional:** Basic chat works immediately
 ✅ **Maintainable:** Clean separation of concerns
 ✅ **User-Friendly:** Intuitive UI and simple installation
+✅ **Input Focus:** Text input properly receives and maintains focus
+✅ **Window Dragging:** Goose can grab and drag the chat window like memes/pictures
+
+## Recent Updates (November 2025)
+
+### Fixed: Text Input Focus Issue
+**Problem:** Users were unable to input text into the chat bar.
+
+**Solution:**
+- Added `TabIndex` properties to controls (0 for input, 1 for button)
+- Implemented `Shown` and `Activated` event handlers to set focus when window opens or gains focus
+- Added focus restoration after sending messages for continuous chatting experience
+- Result: Input field now properly receives focus and users can type immediately
+
+### Implemented: Window Dragging by Goose
+**Problem:** Window dragging was mentioned in comments but not actually implemented.
+
+**Solution:**
+- Imported Windows API `SetWindowPos` function for programmatic window positioning
+- Enhanced task data structure with dragging state tracking (isDragging, dragOffset, initialWindowPos, etc.)
+- Implemented 4-phase dragging behavior:
+  1. **Approach (0-0.5s):** Goose runs toward the window
+  2. **Grab (0.5-1.5s):** Goose reaches window top and extends neck
+  3. **Drag (1.5-4.5s):** Goose actively drags window across screen with smooth, natural motion
+  4. **Release (4.5s+):** Goose lets go and returns to normal behavior
+- Added sinusoidal vertical movement during dragging for natural appearance
+- Ensured window stays within screen bounds during dragging
+- Result: Goose now interacts with chat window exactly like it does with memes and pictures!
 
 ## Conclusion
 
