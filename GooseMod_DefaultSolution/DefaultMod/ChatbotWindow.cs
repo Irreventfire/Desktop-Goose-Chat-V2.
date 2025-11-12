@@ -34,6 +34,15 @@ namespace DefaultMod
             responseProvider = provider;
         }
 
+        /// <summary>
+        /// Get the window handle for goose interaction.
+        /// This allows the goose to drag the window around.
+        /// </summary>
+        public IntPtr GetWindowHandle()
+        {
+            return this.Handle;
+        }
+
         private void InitializeComponents()
         {
             // Window properties
@@ -69,7 +78,8 @@ namespace DefaultMod
             {
                 Dock = DockStyle.Fill,
                 Font = new Font("Segoe UI", 10f),
-                BorderStyle = BorderStyle.FixedSingle
+                BorderStyle = BorderStyle.FixedSingle,
+                TabIndex = 0
             };
             userInput.KeyDown += UserInput_KeyDown;
 
@@ -83,7 +93,8 @@ namespace DefaultMod
                 BackColor = Color.FromArgb(100, 150, 255),
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-                Cursor = Cursors.Hand
+                Cursor = Cursors.Hand,
+                TabIndex = 1
             };
             sendButton.FlatAppearance.BorderSize = 0;
             sendButton.Click += SendButton_Click;
@@ -96,8 +107,24 @@ namespace DefaultMod
             this.Controls.Add(chatDisplay);
             this.Controls.Add(inputPanel);
 
+            // Set up event handlers for focus management
+            this.Shown += ChatbotWindow_Shown;
+            this.Activated += ChatbotWindow_Activated;
+
             // Initial greeting
             AddMessage("Goose", "Honk! Hello! I'm your Desktop Goose! Type a message and press Send or Enter to chat with me! 🦢");
+        }
+
+        private void ChatbotWindow_Shown(object sender, EventArgs e)
+        {
+            // Set focus to input field when window is first shown
+            userInput.Focus();
+        }
+
+        private void ChatbotWindow_Activated(object sender, EventArgs e)
+        {
+            // Set focus to input field when window is activated
+            userInput.Focus();
         }
 
         private void UserInput_KeyDown(object sender, KeyEventArgs e)
@@ -128,6 +155,9 @@ namespace DefaultMod
 
             // Clear input
             userInput.Clear();
+            
+            // Keep focus on input field for continuous chatting
+            userInput.Focus();
 
             // Get response from the provider
             string response = responseProvider.GetResponse(message, conversationHistory);

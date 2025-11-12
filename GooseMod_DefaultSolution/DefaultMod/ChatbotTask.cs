@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using GooseShared;
 using SamEngine;
@@ -13,6 +14,14 @@ namespace DefaultMod
     {
         // Static reference to the chatbot window so it persists across task instances
         private static ChatbotWindow chatWindow = null;
+
+        // Windows API for window manipulation
+        [DllImport("user32.dll")]
+        private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+        private const uint SWP_NOSIZE = 0x0001;
+        private const uint SWP_NOZORDER = 0x0004;
+        private const uint SWP_NOACTIVATE = 0x0010;
 
         public ChatbotTask()
         {
@@ -32,6 +41,11 @@ namespace DefaultMod
         {
             public float timeStarted;
             public bool windowOpened;
+            public bool isDragging;
+            public float dragStartTime;
+            public Vector2 dragOffset;
+            public Vector2 initialWindowPos;
+            public float dragPhase; // 0 = approach, 1 = grab, 2 = drag, 3 = release
         }
 
         public override GooseTaskData GetNewTaskData(GooseEntity goose)
@@ -39,7 +53,12 @@ namespace DefaultMod
             ChatbotTaskData taskData = new ChatbotTaskData
             {
                 timeStarted = Time.time,
-                windowOpened = false
+                windowOpened = false,
+                isDragging = false,
+                dragStartTime = 0,
+                dragOffset = Vector2.zero,
+                initialWindowPos = Vector2.zero,
+                dragPhase = 0
             };
             return taskData;
         }
@@ -55,34 +74,94 @@ namespace DefaultMod
                 data.windowOpened = true;
             }
 
-            // Keep the window visible and positioned near the goose for a while
-            if (chatWindow != null && !chatWindow.IsDisposed)
+            // Make sure window exists and is valid
+            if (chatWindow == null || chatWindow.IsDisposed)
             {
-                // If the window is hidden, show it
-                if (!chatWindow.Visible)
-                {
-                    chatWindow.Show();
-                }
-
-                // Position the window near the goose when first opened
-                if (Time.time - data.timeStarted < 0.5f)
-                {
-                    // Position window slightly offset from goose position
-                    int windowX = (int)goose.position.x + 50;
-                    int windowY = (int)goose.position.y - 100;
-
-                    // Make sure window stays on screen
-                    windowX = Math.Max(0, Math.Min(windowX, Screen.PrimaryScreen.WorkingArea.Width - chatWindow.Width));
-                    windowY = Math.Max(0, Math.Min(windowY, Screen.PrimaryScreen.WorkingArea.Height - chatWindow.Height));
-
-                    chatWindow.Location = new System.Drawing.Point(windowX, windowY);
-                }
+                API.Goose.setTaskRoaming(goose);
+                return;
             }
 
-            // After a short time, return to normal behavior
-            // The window stays open for the user to interact with
-            if (Time.time - data.timeStarted > 2f)
+            // If the window is hidden, show it
+            if (!chatWindow.Visible)
             {
+                chatWindow.Show();
+            }
+
+            float timeSinceStart = Time.time - data.timeStarted;
+
+            // Phase 0: Initial positioning and approach (0-0.5 seconds)
+            if (timeSinceStart < 0.5f)
+            {
+                // Position window near the goose when first opened
+                int windowX = (int)goose.position.x + 50;
+                int windowY = (int)goose.position.y - 100;
+
+                // Make sure window stays on screen
+                windowX = Math.Max(0, Math.Min(windowX, Screen.PrimaryScreen.WorkingArea.Width - chatWindow.Width));
+                windowY = Math.Max(0, Math.Min(windowY, Screen.PrimaryScreen.WorkingArea.Height - chatWindow.Height));
+
+                chatWindow.Location = new System.Drawing.Point(windowX, windowY);
+                data.initialWindowPos = new Vector2(windowX, windowY);
+                
+                // Make goose approach the window
+                goose.targetPos = new Vector2(windowX + chatWindow.Width / 2, windowY + chatWindow.Height);
+                API.Goose.setSpeed(goose, GooseEntity.SpeedTiers.Run);
+            }
+            // Phase 1: Grab the window (0.5-1.5 seconds) - goose reaches window and "grabs" it
+            else if (timeSinceStart >= 0.5f && timeSinceStart < 1.5f)
+            {
+                if (!data.isDragging)
+                {
+                    data.isDragging = true;
+                    data.dragStartTime = Time.time;
+                    
+                    // Calculate offset from goose to window top center
+                    Vector2 windowTopCenter = new Vector2(
+                        chatWindow.Location.X + chatWindow.Width / 2,
+                        chatWindow.Location.Y
+                    );
+                    data.dragOffset = windowTopCenter - goose.position;
+                }
+
+                // Goose holds position at the top of the window
+                goose.targetPos = new Vector2(
+                    chatWindow.Location.X + chatWindow.Width / 2,
+                    chatWindow.Location.Y
+                );
+                API.Goose.setSpeed(goose, GooseEntity.SpeedTiers.Walk);
+                goose.extendingNeck = true; // Make goose extend neck as if holding
+            }
+            // Phase 2: Drag the window (1.5-4.5 seconds) - goose drags window across screen
+            else if (timeSinceStart >= 1.5f && timeSinceStart < 4.5f)
+            {
+                // Calculate target position for dragging (pull window partially across screen)
+                float dragProgress = (timeSinceStart - 1.5f) / 3.0f; // 0 to 1 over 3 seconds
+                
+                // Target: drag window from current position toward center or to the side
+                int screenCenterX = Screen.PrimaryScreen.WorkingArea.Width / 2;
+                int targetX = (int)SamMath.Lerp(data.initialWindowPos.x, screenCenterX - chatWindow.Width / 2, dragProgress);
+                
+                // Add some vertical movement for natural dragging
+                int targetY = (int)(data.initialWindowPos.y + Math.Sin(dragProgress * Math.PI) * 50);
+                
+                // Keep on screen
+                targetX = Math.Max(0, Math.Min(targetX, Screen.PrimaryScreen.WorkingArea.Width - chatWindow.Width));
+                targetY = Math.Max(0, Math.Min(targetY, Screen.PrimaryScreen.WorkingArea.Height - chatWindow.Height));
+
+                // Move the window
+                SetWindowPos(chatWindow.GetWindowHandle(), IntPtr.Zero, targetX, targetY, 0, 0, 
+                    SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+
+                // Make goose follow the top of the window
+                goose.targetPos = new Vector2(targetX + chatWindow.Width / 2, targetY);
+                API.Goose.setSpeed(goose, GooseEntity.SpeedTiers.Run);
+                goose.extendingNeck = true;
+            }
+            // Phase 3: Release and leave (after 4.5 seconds)
+            else
+            {
+                data.isDragging = false;
+                // Goose lets go and returns to normal behavior
                 API.Goose.setTaskRoaming(goose);
             }
         }
