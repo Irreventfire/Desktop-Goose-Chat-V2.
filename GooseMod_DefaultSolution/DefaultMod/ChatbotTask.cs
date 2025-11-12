@@ -174,13 +174,31 @@ namespace DefaultMod
                     data.isDragging = false;
                     
                     // Activate the window so user can interact with it
+                    // CRITICAL: We must use Invoke to marshal this call to the UI thread
+                    // because RunTask is called from the game loop thread, not the UI thread
                     if (chatWindow != null && !chatWindow.IsDisposed && chatWindow.Visible)
                     {
-                        chatWindow.Activate();
-                        // Bring window to front and ensure it's focusable
-                        chatWindow.BringToFront();
-                        chatWindow.TopMost = true;  // Temporarily set to topmost
-                        chatWindow.TopMost = false; // Then remove it to avoid always-on-top behavior
+                        // Use BeginInvoke for async execution to avoid blocking the game loop
+                        chatWindow.BeginInvoke(new Action(() =>
+                        {
+                            try
+                            {
+                                // Activate and bring window to front
+                                chatWindow.Activate();
+                                chatWindow.BringToFront();
+                                
+                                // Use TopMost trick to ensure window comes to front
+                                chatWindow.TopMost = true;
+                                chatWindow.TopMost = false;
+                                
+                                // Explicitly set focus to the input field
+                                chatWindow.FocusInput();
+                            }
+                            catch (Exception)
+                            {
+                                // Silently ignore any threading exceptions
+                            }
+                        }));
                     }
                     
                     // Mark task as completed to prevent further execution

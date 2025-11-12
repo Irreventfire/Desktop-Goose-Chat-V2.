@@ -43,6 +43,18 @@ namespace DefaultMod
             return this.Handle;
         }
 
+        /// <summary>
+        /// Explicitly set focus to the input field.
+        /// This is called from the goose task after the window is activated.
+        /// </summary>
+        public void FocusInput()
+        {
+            if (userInput != null && !userInput.IsDisposed)
+            {
+                userInput.Focus();
+            }
+        }
+
         private void InitializeComponents()
         {
             // Window properties
@@ -118,13 +130,28 @@ namespace DefaultMod
         private void ChatbotWindow_Shown(object sender, EventArgs e)
         {
             // Set focus to input field when window is first shown
-            userInput.Focus();
+            // Use BeginInvoke to ensure the window is fully shown before setting focus
+            this.BeginInvoke(new Action(() =>
+            {
+                if (userInput != null && !userInput.IsDisposed)
+                {
+                    userInput.Focus();
+                }
+            }));
         }
 
         private void ChatbotWindow_Activated(object sender, EventArgs e)
         {
             // Set focus to input field when window is activated
-            userInput.Focus();
+            // Use BeginInvoke to ensure the window is fully activated before setting focus
+            this.BeginInvoke(new Action(() =>
+            {
+                if (userInput != null && !userInput.IsDisposed)
+                {
+                    userInput.Focus();
+                    userInput.Select(userInput.Text.Length, 0); // Move cursor to end
+                }
+            }));
         }
 
         private void UserInput_KeyDown(object sender, KeyEventArgs e)
