@@ -8,17 +8,21 @@ A chatbot mod for Desktop Goose that allows users to chat with the goose! The go
 - ✅ Basic hardcoded responses with personality
 - ✅ Clean, modern UI with Windows Forms
 - ✅ Easy to extend with AI capabilities
-- ✅ Window can be moved around by the goose
+- ✅ **Window can be dragged by the goose** (like memes and pictures)
+- ✅ **Automatic focus on input field** for seamless chatting
 - ✅ Persists across multiple goose interactions
 
 ## How It Works
 
 The mod adds a new task called `ChatbotTask` that the goose can randomly choose to perform. When activated:
 
-1. The goose opens a chat window
-2. You can type messages and the goose responds
-3. The chat window stays open even after the goose moves on to other tasks
-4. You can chat with the goose anytime!
+1. The goose opens a chat window near itself
+2. The goose approaches the window and "grabs" it by extending its neck
+3. The goose drags the window across the screen (just like it does with memes!)
+4. After dragging, the goose releases the window and goes back to its normal behavior
+5. You can type messages and the goose responds
+6. The chat window stays open even after the goose moves on to other tasks
+7. You can chat with the goose anytime!
 
 ## Files Overview
 
