@@ -46,6 +46,7 @@ namespace DefaultMod
             public Vector2 dragOffset;
             public Vector2 initialWindowPos;
             public float dragPhase; // 0 = approach, 1 = grab, 2 = drag, 3 = release
+            public bool taskCompleted; // Flag to indicate task has finished
         }
 
         public override GooseTaskData GetNewTaskData(GooseEntity goose)
@@ -58,7 +59,8 @@ namespace DefaultMod
                 dragStartTime = 0,
                 dragOffset = Vector2.zero,
                 initialWindowPos = Vector2.zero,
-                dragPhase = 0
+                dragPhase = 0,
+                taskCompleted = false
             };
             return taskData;
         }
@@ -66,6 +68,13 @@ namespace DefaultMod
         public override void RunTask(GooseEntity goose)
         {
             ChatbotTaskData data = (ChatbotTaskData)goose.currentTaskData;
+
+            // If task is already completed, end immediately to prevent interference
+            if (data.taskCompleted)
+            {
+                API.Goose.setTaskRoaming(goose);
+                return;
+            }
 
             // Open the window if not already opened
             if (!data.windowOpened)
@@ -96,7 +105,7 @@ namespace DefaultMod
                 int windowX = (int)goose.position.x + 50;
                 int windowY = (int)goose.position.y - 100;
 
-                // Make sure window stays on screen
+                // Make sure window stays on screen with proper bounds
                 windowX = Math.Max(0, Math.Min(windowX, Screen.PrimaryScreen.WorkingArea.Width - chatWindow.Width));
                 windowY = Math.Max(0, Math.Min(windowY, Screen.PrimaryScreen.WorkingArea.Height - chatWindow.Height));
 
@@ -144,9 +153,9 @@ namespace DefaultMod
                 // Add some vertical movement for natural dragging
                 int targetY = (int)(data.initialWindowPos.y + Math.Sin(dragProgress * Math.PI) * 50);
                 
-                // Keep on screen
-                targetX = Math.Max(0, Math.Min(targetX, Screen.PrimaryScreen.WorkingArea.Width - chatWindow.Width));
-                targetY = Math.Max(0, Math.Min(targetY, Screen.PrimaryScreen.WorkingArea.Height - chatWindow.Height));
+                // Keep on screen - ensure window stays fully visible with proper margin
+                targetX = Math.Max(10, Math.Min(targetX, Screen.PrimaryScreen.WorkingArea.Width - chatWindow.Width - 10));
+                targetY = Math.Max(10, Math.Min(targetY, Screen.PrimaryScreen.WorkingArea.Height - chatWindow.Height - 10));
 
                 // Move the window
                 SetWindowPos(chatWindow.GetWindowHandle(), IntPtr.Zero, targetX, targetY, 0, 0, 
@@ -168,7 +177,14 @@ namespace DefaultMod
                     if (chatWindow != null && !chatWindow.IsDisposed && chatWindow.Visible)
                     {
                         chatWindow.Activate();
+                        // Bring window to front and ensure it's focusable
+                        chatWindow.BringToFront();
+                        chatWindow.TopMost = true;  // Temporarily set to topmost
+                        chatWindow.TopMost = false; // Then remove it to avoid always-on-top behavior
                     }
+                    
+                    // Mark task as completed to prevent further execution
+                    data.taskCompleted = true;
                 }
                 
                 // Goose lets go and returns to normal behavior
